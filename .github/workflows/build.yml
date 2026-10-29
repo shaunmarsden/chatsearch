@@ -20,8 +20,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # the unit tests build sample chats from the system word list, which macOS has and Ubuntu lacks
-      - run: sudo apt-get install -y wamerican
+      # the unit tests build sample chats from /usr/share/dict/words and are tuned to the macOS list
+      # (BSD web2); Ubuntu's list is different, so fetch web2 from FreeBSD at a pinned commit
+      - run: sudo mkdir -p /usr/share/dict && sudo curl -sSfL -o /usr/share/dict/words https://raw.githubusercontent.com/freebsd/freebsd-src/4a65e12dfbaba7193e37fcd2e14fbc20776a78b9/share/dict/web2
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
