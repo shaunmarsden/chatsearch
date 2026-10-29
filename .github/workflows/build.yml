@@ -20,6 +20,8 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # the unit tests build sample chats from the system word list, which macOS has and Ubuntu lacks
+      - run: sudo apt-get install -y wamerican
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
