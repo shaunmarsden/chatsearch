@@ -4,7 +4,6 @@ release/
 test/.out/
 test/e2e/out/
 test/e2e/.certs/
-relay/data/
 .railway/
 context/
 claude_code/

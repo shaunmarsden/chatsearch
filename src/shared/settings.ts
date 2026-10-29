@@ -2,7 +2,9 @@ import { DEFAULT_SETTINGS, type Settings, type SourceStatus, type Source } from 
 
 export async function getSettings(): Promise<Settings> {
   const r = await chrome.storage.local.get('settings');
-  const s = (r.settings || {}) as Partial<Settings>;
+  // relayUrl and semantic 'cloud' came from the upstream cloud mode, which this fork removes
+  const { relayUrl: _relay, ...s } = (r.settings || {}) as Partial<Settings> & { relayUrl?: string };
+  if ((s.semantic as string) === 'cloud') s.semantic = 'local';
   return { ...DEFAULT_SETTINGS, ...s, sources: { ...DEFAULT_SETTINGS.sources, ...(s.sources || {}) } };
 }
 
@@ -11,14 +13,6 @@ export async function setSettings(patch: Partial<Settings>): Promise<Settings> {
   const next = { ...cur, ...patch, sources: { ...cur.sources, ...(patch.sources || {}) } };
   await chrome.storage.local.set({ settings: next });
   return next;
-}
-
-export async function getClientId(): Promise<string> {
-  const r = await chrome.storage.local.get('clientId');
-  if (r.clientId) return r.clientId as string;
-  const id = crypto.randomUUID();
-  await chrome.storage.local.set({ clientId: id });
-  return id;
 }
 
 export type StatusMap = Partial<Record<Source, SourceStatus>>;

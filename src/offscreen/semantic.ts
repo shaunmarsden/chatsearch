@@ -7,7 +7,7 @@ import * as db from '../shared/db';
 import { chunkText, hash53 } from '../shared/indexer';
 import type { ChunkRef, ConvContent, ConvMeta } from '../shared/types';
 
-export type Mode = 'off' | 'local' | 'cloud';
+export type Mode = 'off' | 'local';
 
 interface ChunkRec {
   id: string;
@@ -32,9 +32,8 @@ export interface SemanticStatus {
 }
 
 const MODEL_KEYS: Record<Exclude<Mode, 'off'>, { key: string; dims: number; bands: Bands }> = {
-  // cosine bands from spot checks: a clearly on-topic chat scores ~0.5 (local) / ~0.65 (cloud), unrelated ~0.1-0.3
+  // cosine bands from spot checks: a clearly on-topic chat scores ~0.5, unrelated ~0.1-0.3
   local: { key: 'leaf-ir-256', dims: 256, bands: { strong: 0.42, weak: 0.31 } },
-  cloud: { key: 'qwen3e8b-512', dims: 512, bands: { strong: 0.5, weak: 0.33 } },
 };
 
 export interface Bands {
@@ -68,8 +67,6 @@ async function onBattery(): Promise<boolean> {
 
 export class Semantic {
   mode: Mode = 'off';
-  relayUrl = '';
-  clientId = '';
   status: SemanticStatus = { mode: 'off', state: 'off', done: 0, total: 0 };
   onStatus: ((s: SemanticStatus) => void) | null = null;
 
@@ -96,11 +93,9 @@ export class Semantic {
   private paused = false;
   lastUse = 0;
 
-  configure(mode: Mode, relayUrl: string, clientId: string) {
+  configure(mode: Mode) {
     const changed = mode !== this.mode;
     this.mode = mode;
-    this.relayUrl = relayUrl;
-    this.clientId = clientId;
     if (changed) {
       this.unload();
       this.status = { mode, state: mode === 'off' ? 'off' : 'indexing', done: 0, total: 0 };
@@ -169,30 +164,8 @@ export class Semantic {
     return r.vecs as Float32Array;
   }
 
-  private async embedCloud(texts: string[], query: boolean): Promise<Float32Array> {
-    const res = await fetch(`${this.relayUrl}/v1/embed`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ input: texts, type: query ? 'query' : 'document', client: this.clientId }),
-    });
-    if (!res.ok) {
-      let msg = `relay error ${res.status}`;
-      try {
-        msg = (await res.json()).error || msg;
-      } catch {}
-      const err: any = new Error(msg);
-      err.status = res.status;
-      throw err;
-    }
-    const j = await res.json();
-    const bin = atob(j.data);
-    const buf = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
-    return new Float32Array(buf.buffer);
-  }
-
   private embed(texts: string[], query: boolean) {
-    return this.mode === 'cloud' ? this.embedCloud(texts, query) : this.embedLocal(texts, query);
+    return this.embedLocal(texts, query);
   }
 
   // ------------------------------------------------------------ index
@@ -222,7 +195,7 @@ export class Semantic {
     if (this.mode === 'off') return Promise.resolve();
     if (this.loadingP) return this.loadingP;
     this.loadingP = (async () => {
-      const { key, dims } = MODEL_KEYS[this.mode as 'local' | 'cloud'];
+      const { key, dims } = MODEL_KEYS[this.mode as 'local'];
       this.key = key;
       this.dims = dims;
       this.n = 0;
@@ -333,7 +306,7 @@ export class Semantic {
     for (let k = 0; k < K; k++) if (topI[k] >= 0) hits.push({ id: this.rowId[topI[k]], sim: topS[k], chunk: this.rowChunk[topI[k]] });
     hits.sort((a, b) => b.sim - a.sim);
     const cov = this.coverage();
-    return { hits, coverage: cov, state: cov < 0.999 ? 'indexing' : 'ok', bands: MODEL_KEYS[this.mode as 'local' | 'cloud'].bands };
+    return { hits, coverage: cov, state: cov < 0.999 ? 'indexing' : 'ok', bands: MODEL_KEYS[this.mode as 'local'].bands };
   }
 
   coverage() {
@@ -388,8 +361,7 @@ export class Semantic {
         }
         this.status.state = 'indexing';
         this.emit();
-        const cloud = this.mode === 'cloud';
-        const batchSize = cloud ? 96 : this.device.startsWith('webgpu') ? 24 : 6;
+        const batchSize = this.device.startsWith('webgpu') ? 24 : 6;
         let i = 0;
         let backoff = 0;
         const mode = this.mode;
@@ -460,13 +432,11 @@ export class Semantic {
           this.status.state = 'indexing';
           this.status.message = undefined;
           this.emit();
-          // be a good citizen: local mode runs at ~50% duty cycle on power, ~20% on battery, and backs
-          // off right after the user searched
-          if (!cloud) {
-            const busy = Date.now() - this.lastUse < 4000;
-            const battery = await onBattery();
-            await sleep(busy ? 400 + dt * 2 : dt * (battery ? 4 : 0.8));
-          } else await sleep(150);
+          // be a good citizen: run at ~50% duty cycle on power, ~20% on battery, and back off right
+          // after the user searched
+          const busy = Date.now() - this.lastUse < 4000;
+          const battery = await onBattery();
+          await sleep(busy ? 400 + dt * 2 : dt * (battery ? 4 : 0.8));
         }
         if (this.mode === mode && i >= pending.length) this.kick = true; // re-scan for anything new
         await this.gc();

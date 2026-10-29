@@ -1,0 +1,38 @@
+# Checks every change and builds the extension zip. Pushing a tag like v1.0.2 also publishes a
+# release, so the README's download link always serves a zip built from this repo's own code.
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # the unit tests build sample chats from /usr/share/dict/words and are tuned to the macOS list
+      # (BSD web2); Ubuntu's list is different, so fetch web2 from FreeBSD at a pinned commit
+      - run: sudo mkdir -p /usr/share/dict && sudo curl -sSfL -o /usr/share/dict/words https://raw.githubusercontent.com/freebsd/freebsd-src/4a65e12dfbaba7193e37fcd2e14fbc20776a78b9/share/dict/web2
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chatsearch
+          path: release/chatsearch.zip
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" release/chatsearch.zip --title "$GITHUB_REF_NAME" --notes "Built from $GITHUB_SHA."

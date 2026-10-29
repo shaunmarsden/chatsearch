@@ -19,9 +19,9 @@ engine.semantic = async (q) => semantic.query(q);
 semantic.onStatus = (s: SemanticStatus) => broadcast({ type: 'semantic-status', status: s });
 
 async function configureSemantic() {
-  const r: { settings: Settings; clientId: string } | null = await chrome.runtime.sendMessage({ type: 'get-config' }).catch(() => null);
+  const r: { settings: Settings } | null = await chrome.runtime.sendMessage({ type: 'get-config' }).catch(() => null);
   if (!r) return;
-  semantic.configure(r.settings.semantic, r.settings.relayUrl, r.clientId);
+  semantic.configure(r.settings.semantic);
   if (r.settings.semantic !== 'off') semantic.kickQueue();
 }
 

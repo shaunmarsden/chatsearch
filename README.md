@@ -1,10 +1,12 @@
 # ChatSearch
 
-Real search for your Claude and ChatGPT history, as a Chrome extension. Every word of every chat, searchable as you type, with typo tolerance and search by meaning. Your chats are indexed inside your own browser; nothing is sent anywhere unless you turn on the optional cloud mode.
+Real search for your Claude and ChatGPT history, as a Chrome extension. Every word of every chat, searchable as you type, with typo tolerance and search by meaning. Your chats are indexed inside your own browser and never leave it.
+
+This is my fork of [Aaron Bergman's ChatSearch](https://github.com/AaronBergman/chatsearch). The one real change is that I removed the optional cloud mode, which could send chat text to an outside server for search by meaning. In this version there is no setting that sends your chats anywhere, so it is safe to use with chats that hold work or client details. Everything else is Aaron's work.
 
 ![ChatSearch popup searching for "sourdough"](assets/screens/popup-search.png)
 
-**[Download the latest release](https://github.com/AaronBergman/chatsearch/releases/latest/download/chatsearch.zip)** · [Landing page](https://abergman.com/chatsearch)
+**[Download the latest release](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip)** · [Original project](https://github.com/AaronBergman/chatsearch)
 
 ## What it does
 
@@ -23,7 +25,7 @@ Real search for your Claude and ChatGPT history, as a Chrome extension. Every wo
 
 ChatSearch isn't on the Chrome Web Store yet, so it installs as an unpacked extension (takes a minute):
 
-1. Download [`chatsearch.zip`](https://github.com/AaronBergman/chatsearch/releases/latest/download/chatsearch.zip) and unzip it.
+1. Download [`chatsearch.zip`](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
 3. Click **Load unpacked** and choose the unzipped `chatsearch` folder.
 4. Pin it: click the puzzle-piece icon in the toolbar, then the pin next to ChatSearch.
@@ -70,17 +72,14 @@ In the address bar, type `cs`, a space, and your search to get results right in 
 
 ## Search by meaning
 
-Two options, picked in Settings:
-
-- **On this device** (default). Uses [MongoDB/mdbr-leaf-ir](https://huggingface.co/MongoDB/mdbr-leaf-ir), a 23M-parameter retrieval model, through transformers.js. It runs on the GPU via WebGPU when available, otherwise on the CPU. The model is downloaded once from Hugging Face (23 to 46 MB). Embedding happens in the background, newest chats first, at about half speed on power and a lighter trickle on battery, and every passage is embedded exactly once (vectors are keyed by a hash of the text).
-- **Cloud**. Sends passage text to a small relay that calls Qwen3-Embedding-8B on DeepInfra. Higher quality and much faster for large histories, but your chat text leaves your browser (not stored or logged by the relay). Free, with a monthly cap shared by all users.
+Turned on by default, and you can switch it off in Settings. It uses [MongoDB/mdbr-leaf-ir](https://huggingface.co/MongoDB/mdbr-leaf-ir), a 23M-parameter retrieval model, through transformers.js. It runs on the GPU via WebGPU when available, otherwise on the CPU. The model is downloaded once from Hugging Face (23 to 46 MB). Embedding happens in the background, newest chats first, at about half speed on power and a lighter trickle on battery, and every passage is embedded exactly once (vectors are keyed by a hash of the text).
 
 Typed queries are capped at 1,000 characters, and a semantic search only runs when you ask for it (or automatically once when an exact search finds nothing), never on every keystroke.
 
 ## Privacy
 
 - Your chats, the search index and the vectors live in this browser's IndexedDB. Uninstalling the extension deletes them; Settings also has a delete button.
-- Network requests go only to claude.ai and chatgpt.com (with your existing login, exactly like the sites themselves), to Hugging Face once for the on-device model, and to the embedding relay only if you choose cloud mode.
+- Network requests go only to claude.ai and chatgpt.com (with your existing login, exactly like the sites themselves), and to Hugging Face once to download the on-device model. Nothing else, and no setting changes that.
 - No analytics, no tracking, no accounts.
 
 ## Performance
@@ -98,7 +97,9 @@ npm run e2e          # headless Chromium against mock claude.ai / chatgpt.com
 npm run zip          # release/chatsearch-<version>.zip
 ```
 
-Layout: `src/sw` (service worker: sync, capture, routing), `src/offscreen` (search engine, semantic index, embedding worker), `src/content` (page fetch observer and jump-to-match), `src/ui` (Preact UI shared by the popup, side panel and full page), `src/shared` (storage, normalization, Bloom filters, extraction, indexing), `relay/` (the optional cloud embedding relay).
+GitHub Actions runs the typecheck, unit tests and build on every pull request. Pushing a tag such as `v1.0.2` also publishes a release with the zip built from this repo.
+
+Layout: `src/sw` (service worker: sync, capture, routing), `src/offscreen` (search engine, semantic index, embedding worker), `src/content` (page fetch observer and jump-to-match), `src/ui` (Preact UI shared by the popup, side panel and full page), `src/shared` (storage, normalization, Bloom filters, extraction, indexing).
 
 ## Notes
 
