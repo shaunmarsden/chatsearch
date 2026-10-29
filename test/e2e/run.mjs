@@ -17,7 +17,6 @@ import { ORG, gptDetail, makeData, startMock } from './mock.mjs';
 const PORT = 8443;
 const GPT_BURST = 18; // mock ChatGPT starts answering 429 after this many conversation reads
 const SEMANTIC = true; // downloads the local embedding model from Hugging Face on first run
-const CLOUD = true; // also exercises the live Railway relay (a few hundred passages, well under a cent)
 const KEEP_OPEN_MS = 0; // set >0 to leave the browser up for poking around
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -331,37 +330,6 @@ if (SEMANTIC) {
     assert(rank >= 0 && rank < 3, `birding chat ranked ${rank}: ${ts.slice(0, 5).join(' | ')}`);
     await p.close();
     return `rank ${rank + 1}; ${sem.done} passages via ${sem.backend || sem.device || '?'}`;
-  });
-}
-
-if (CLOUD) {
-  await check('cloud mode: relay embeds everything and ranks the birding chat first', async () => {
-    const p = await ctx.newPage();
-    await p.setViewportSize({ width: 780, height: 584 });
-    await p.goto(ext('popup.html'));
-    await p.evaluate(() => chrome.runtime.sendMessage({ type: 'settings', patch: { semantic: 'cloud' } }));
-    const sem = await until(
-      async () => {
-        const s = await p.evaluate(() => chrome.runtime.sendMessage({ to: 'offscreen', type: 'semantic-status' }));
-        if (s?.state === 'error') throw new Error(s.message);
-        return s && s.mode === 'cloud' && s.total && s.done >= s.total ? s : null;
-      },
-      120000,
-      'cloud embeddings',
-    );
-    await p.locator('header input').fill('where do birds fly when it gets cold');
-    await p.locator('.sem-btn').click();
-    const ts = await until(async () => {
-      const t = await p.locator('.item .item-title').allInnerTexts();
-      return t.length && (await p.locator('.note.sem').count()) ? t : null;
-    }, 30000, 'cloud semantic results');
-    await sleep(500);
-    await p.screenshot({ path: join(OUT, '07b-semantic-cloud.png') });
-    const rank = ts.findIndex((t) => t.includes('Backyard birding'));
-    assert(rank === 0, `birding chat ranked ${rank}: ${ts.slice(0, 5).join(' | ')}`);
-    await p.evaluate(() => chrome.runtime.sendMessage({ type: 'settings', patch: { semantic: 'local' } }));
-    await p.close();
-    return `${sem.done} passages via relay, rank 1`;
   });
 }
 

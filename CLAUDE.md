@@ -1,12 +1,12 @@
 # ChatSearch (Chrome extension)
 
-Real search for your Claude and ChatGPT history: live substring search (trigram-Bloom prefilter + exact verification), fuzzy titles and "did you mean", and semantic search (on-device by default, optional cloud relay). Built 2026-10-12 from Aaron's goal prompt (context screenshots in `context/`, not for the public repo). Public repo: github.com/AaronBergman/chatsearch. Landing page: abergman.com/chatsearch (template in `~/personal_site/site/templates/chatsearch.html`, images in `site/static/img/chatsearch/`).
+Real search for your Claude and ChatGPT history: live substring search (trigram-Bloom prefilter + exact verification), fuzzy titles and "did you mean", and on-device semantic search. This is a fork of github.com/AaronBergman/chatsearch with the cloud relay mode removed: chat text must never leave the browser, so don't add it back. Built 2026-10-12 from Aaron's goal prompt (context screenshots in `context/`, not for the public repo). Public repo: github.com/AaronBergman/chatsearch. Landing page: abergman.com/chatsearch (template in `~/personal_site/site/templates/chatsearch.html`, images in `site/static/img/chatsearch/`).
 
 ## Commands
 
 - `npm run build` (dist/, load unpacked), `npm run watch`, `npm run typecheck`.
 - `npm test`: unit tests + 10k-chat scale benchmark (`SCALE_N`, `SCALE_CHARS` env to resize).
-- `npm run e2e` (`test/e2e/run.mjs`): headless Chromium (`channel: 'chromium'`, needs `npx playwright install chromium`) with the built extension; claude.ai/chatgpt.com are mapped to a local HTTPS mock (`test/e2e/mock.mjs`) via `--host-resolver-rules`. 23 checks incl. sync, 429 backoff, Cloudflare-challenge handling, capture, jump-to-match, deletion, local semantic and cloud semantic (hits the live relay, well under a cent). Screenshots in `test/e2e/out/`, failure screenshots `fail-*.png`.
+- `npm run e2e` (`test/e2e/run.mjs`): headless Chromium (`channel: 'chromium'`, needs `npx playwright install chromium`) with the built extension; claude.ai/chatgpt.com are mapped to a local HTTPS mock (`test/e2e/mock.mjs`) via `--host-resolver-rules`. 22 checks incl. sync, 429 backoff, Cloudflare-challenge handling, capture, jump-to-match, deletion, local semantic. Screenshots in `test/e2e/out/`, failure screenshots `fail-*.png`.
 - `node test/e2e/demo.mjs`: marketing screenshots from a made-up realistic history into `assets/screens/` (also copied to the site).
 - `npm run zip`: `release/chatsearch-<version>.zip`. Release asset must be named `chatsearch.zip` so `releases/latest/download/chatsearch.zip` links work.
 - `test/real/validate.ts`: bundle and run inside a claude.ai / chatgpt.com tab to check extraction against real data (aggregate stats only, no content).
@@ -18,7 +18,6 @@ Real search for your Claude and ChatGPT history: live substring search (trigram-
 - `src/offscreen/` offscreen document = warm search engine (`engine.ts`) + semantic index (`semantic.ts`) + embedding worker (`embed-worker.ts`, transformers.js).
 - `src/content/` MAIN-world fetch hook (captures conversations the page itself loads, zero extra requests) + isolated bridge (relays to SW, jump-to-match highlighting, ChatGPT DOM capture). Both run at `document_start` (the bridge at document_idle missed early captures).
 - `src/ui/` Preact app used by popup, side panel and full-page tab.
-- `relay/` cloud embedding relay, deployed on Railway project `chatsearch-relay` (service `chatsearch-relay`, volume at `/data` for usage counters) at https://chatsearch-relay-production.up.railway.app. DeepInfra `Qwen/Qwen3-Embedding-8B`, 512 dims, caps: 1B tokens/month global, 150M/month and 60M/day per client, 300M/month per IP. Key is the Railway variable `DEEPINFRA_API_KEY`. Redeploy: `cd relay && railway up --detach`.
 
 ## Hard-won facts (measured 2026-10-12 on Aaron's accounts)
 
@@ -29,7 +28,7 @@ Real search for your Claude and ChatGPT history: live substring search (trigram-
 - Aaron's scale: ~5,700 Claude chats, 4,400+ ChatGPT chats.
 - Extension-origin fetch with `credentials: 'include'` works for both sites.
 - onnxruntime sessions must never run concurrently: the embed worker serializes jobs (queries jump the queue). Concurrent runs silently corrupted vectors. The worker also self-tests embedding quality at init (bad GPU output falls back to WASM).
-- mdbr-leaf-ir cosine for a clearly on-topic chat is ~0.5 (unrelated ~0.1-0.3); Qwen3 via relay ~0.65 vs ~0.2. Semantic "strong/related/weak" bands in `semantic.ts` are calibrated from these.
+- mdbr-leaf-ir cosine for a clearly on-topic chat is ~0.5 (unrelated ~0.1-0.3). Semantic "strong/related/weak" bands in `semantic.ts` are calibrated from these.
 
 ## Conventions
 

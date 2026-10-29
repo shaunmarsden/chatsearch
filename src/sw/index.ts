@@ -3,7 +3,7 @@ import * as db from '../shared/db';
 import { chatgptConversation, chatgptMeta, claudeConversation, toMs } from '../shared/extract';
 import { buildChunks, buildIndexRec, INDEX_VERSION } from '../shared/indexer';
 import { ingest, mergeCaptured } from '../shared/ingest';
-import { getClientId, getSettings, setSettings } from '../shared/settings';
+import { getSettings, setSettings } from '../shared/settings';
 import type { ConvContent, ConvMeta, Message, Settings, Source } from '../shared/types';
 import { keepAlive } from './net';
 import { Syncer } from './sync';
@@ -91,7 +91,6 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   await chrome.alarms.create('tick', { periodInMinutes: 1 });
   setupMenus();
   await applyActionBehavior();
-  await getClientId();
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('app.html#welcome') });
   }
@@ -316,7 +315,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       closeOffscreen();
       return;
     case 'get-config':
-      Promise.all([getSettings(), getClientId()]).then(([settings, clientId]) => sendResponse({ settings, clientId }));
+      getSettings().then((settings) => sendResponse({ settings }));
       return true;
     case 'sync-now':
       syncer.run('user', msg.source);
@@ -328,7 +327,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         const next = await setSettings(msg.patch || {});
         await applyActionBehavior(next);
         if (prev.includeThinking !== next.includeThinking || prev.includeAttachments !== next.includeAttachments) reindexAll(true);
-        if (prev.semantic !== next.semantic || prev.relayUrl !== next.relayUrl) {
+        if (prev.semantic !== next.semantic) {
           if (next.semantic !== 'off') await ensureOffscreen();
           broadcast({ type: 'semantic-config' });
         }

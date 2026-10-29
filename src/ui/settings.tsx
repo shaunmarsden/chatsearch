@@ -7,7 +7,8 @@ import { SourceLogo } from './results';
 import { ago, download, fmtBytes, fmtNum, MOD } from './util';
 
 export const VERSION = chrome.runtime.getManifest().version;
-export const REPO = 'https://github.com/AaronBergman/chatsearch';
+export const REPO = 'https://github.com/shaunmarsden/chatsearch';
+export const UPSTREAM = 'https://github.com/AaronBergman/chatsearch';
 
 const SITE: Record<Source, { name: string; url: string; exportHelp: string }> = {
   claude: { name: 'Claude', url: 'https://claude.ai', exportHelp: 'claude.ai → Settings → Privacy → Export data' },
@@ -146,7 +147,6 @@ export function SettingsView({ settings, setSettings, status, semantic, onBack, 
             value={settings.semantic}
             options={[
               ['local', 'On this device'],
-              ['cloud', 'Cloud (best quality)'],
               ['off', 'Off'],
             ]}
             onChange={(v) => patch({ semantic: v })}
@@ -154,9 +154,7 @@ export function SettingsView({ settings, setSettings, status, semantic, onBack, 
           <div class="row-hint">
             {settings.semantic === 'local'
               ? 'Private: a small embedding model (MongoDB leaf-ir, 23 to 46 MB, downloaded once from Hugging Face) runs in your browser, on the GPU when available. Your chats never leave this computer.'
-              : settings.semantic === 'cloud'
-                ? 'Higher quality and much faster for big histories, but chunks of your chats leave this browser: they go through the ChatSearch relay to DeepInfra (Qwen3-Embedding-8B). The relay keeps nothing except token counts, and the vectors are stored only here. Free, with a shared monthly cap.'
-                : 'Only exact and fuzzy keyword search.'}
+              : 'Only exact and fuzzy keyword search.'}
           </div>
           {settings.semantic !== 'off' && semantic ? (
             <div class="sem-status">
@@ -283,8 +281,9 @@ export function SettingsView({ settings, setSettings, status, semantic, onBack, 
             GitHub
           </a>{' '}
           ·{' '}
-          <a class="link" href="https://abergman.com/chatsearch" target="_blank">
-            abergman.com/chatsearch
+          based on{' '}
+          <a class="link" href={UPSTREAM} target="_blank">
+            Aaron Bergman's ChatSearch
           </a>
           <div class="row-hint">Not affiliated with Anthropic or OpenAI. Uses your existing browser login; no account, no tracking.</div>
         </section>

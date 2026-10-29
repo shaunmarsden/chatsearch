@@ -153,14 +153,13 @@ export interface SearchResponse {
 
 export interface Settings {
   sources: Record<Source, boolean>;
-  semantic: 'off' | 'cloud' | 'local';
+  semantic: 'off' | 'local';
   includeThinking: boolean;
   includeAttachments: boolean;
   openIn: 'current' | 'new';
   iconOpens: 'popup' | 'sidepanel';
   history: boolean;
   theme: 'system' | 'light' | 'dark';
-  relayUrl: string;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -172,7 +171,6 @@ export const DEFAULT_SETTINGS: Settings = {
   iconOpens: 'popup',
   history: true,
   theme: 'system',
-  relayUrl: 'https://chatsearch-relay-production.up.railway.app',
 };
 
 export interface Stats {
