@@ -2,11 +2,22 @@
 
 Real search for your Claude and ChatGPT history, as a Chrome extension. Every word of every chat, searchable as you type, with typo tolerance and search by meaning. Your chats are indexed inside your own browser and never leave it.
 
-This is my fork of [Aaron Bergman's ChatSearch](https://github.com/AaronBergman/chatsearch). The one real change is that I removed the optional cloud mode, which could send chat text to an outside server for search by meaning. In this version there is no setting that sends your chats anywhere, so it is safe to use with chats that hold work or client details. Everything else is Aaron's work.
+This is my fork of [Aaron Bergman's ChatSearch](https://github.com/AaronBergman/chatsearch). The one real change is that I removed the optional cloud mode, so no setting can send your chats anywhere. Everything else is Aaron's work.
 
 ![ChatSearch popup searching for "sourdough"](assets/screens/popup-search.png)
 
 **[Download the latest release](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip)** · [Original project](https://github.com/AaronBergman/chatsearch)
+
+## Why I forked it
+
+This extension reads every chat you have had with Claude and ChatGPT. If you work in sales, those chats hold client and prospect details. So before putting my name to it, I checked what it sends and where.
+
+- **By default, your chats stay in your browser.** The extension only talks to claude.ai and chatgpt.com, using your existing login, and to Hugging Face once to download the search model. There are no analytics and no tracking. I checked the published zip as well as the source, and both reach the same places.
+- **The exception was cloud mode.** It was an optional setting for search by meaning, off by default. When it was on, chunks of your chats went to Aaron's server and on to DeepInfra, a third-party AI company. The server code on GitHub doesn't keep the text, but nobody outside can check that the server actually running matches that code. And for a tool that holds client details, one click in Settings is too easy to turn on by mistake.
+
+So I took cloud mode out completely. I also added a GitHub build that runs the tests and makes the download from this repo's own code, so the zip you get matches the code you can read here.
+
+One thing this doesn't fix: the extension reads Claude and ChatGPT through their private web routes, as every tool like it has to. If either site changes, syncing can break until the extension is updated.
 
 ## What it does
 
