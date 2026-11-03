@@ -440,7 +440,7 @@ function App() {
                 <div class="note">
                   Showing results for <b>{res.corrected}</b>.{' '}
                   <a href="#" onClick={(e) => (e.preventDefault(), setQ(`"${q.replace(/"/g, '')}"`))}>
-                    Search for “{q}” instead
+                    Search for "{q}" instead
                   </a>
                 </div>
               ) : null}
@@ -495,7 +495,7 @@ function App() {
                     </>
                   ) : (
                     <>
-                      <div class="empty-title">No chats contain “{q}”</div>
+                      <div class="empty-title">No chats contain "{q}"</div>
                       {settings.semantic !== 'off' ? (
                         <button class="btn primary sm" onClick={semantic}>
                           <IconSparkles size={14} /> Search by meaning

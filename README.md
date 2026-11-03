@@ -1,40 +1,39 @@
 # ChatSearch
 
-Real search for your Claude and ChatGPT history, as a Chrome extension. Every word of every chat, searchable as you type, with typo tolerance and search by meaning. Your chats are indexed inside your own browser and never leave it.
+Search your indexed Claude and ChatGPT history from a Chrome extension. Find words as you type, allow for typos, or search by meaning. The search index is stored in your browser. See [Privacy](#privacy) for network access and preview limitations.
 
-This is my fork of [Aaron Bergman's ChatSearch](https://github.com/AaronBergman/chatsearch). The one real change is that I removed the optional cloud mode, so no setting can send your chats anywhere. Everything else is Aaron's work.
+This is my fork of [Aaron Bergman's ChatSearch](https://github.com/AaronBergman/chatsearch). I removed the optional cloud mode for search by meaning and added a GitHub build. The original extension is Aaron's work.
 
 ![ChatSearch popup searching for "sourdough"](assets/screens/popup-search.png)
 
-**[Download the latest release](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip)** · [Original project](https://github.com/AaronBergman/chatsearch)
+**[Download the latest release](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip)** | [Original project](https://github.com/AaronBergman/chatsearch)
 
 ## Why I forked it
 
-This extension reads every chat you have had with Claude and ChatGPT. If you work in sales, those chats hold client and prospect details. So before putting my name to it, I checked what it sends and where.
+This extension reads chat history from accounts you are signed in to. Those chats may hold client or prospect details, so I wanted search by meaning to run locally, without an optional cloud setting.
 
-- **By default, your chats stay in your browser.** The extension only talks to claude.ai and chatgpt.com, using your existing login, and to Hugging Face once to download the search model. There are no analytics and no tracking. I checked the published zip as well as the source, and both reach the same places.
-- **The exception was cloud mode.** It was an optional setting for search by meaning, off by default. When it was on, chunks of your chats went to Aaron's server and on to DeepInfra, a third-party AI company. The server code on GitHub doesn't keep the text, but nobody outside can check that the server actually running matches that code. And for a tool that holds client details, one click in Settings is too easy to turn on by mistake.
+I removed that setting. The current code runs the embedding model on your device. That is not a guarantee that the extension makes no other network requests: it fetches chats, downloads model files and can load external images in chat previews. See [Privacy](#privacy) before using it with sensitive information.
 
-So I took cloud mode out completely. I also added a GitHub build that runs the tests and makes the download from this repo's own code, so the zip you get matches the code you can read here.
+The [GitHub build](.github/workflows/build.yml) runs the typecheck and unit tests and builds a download from the tagged source. This links the build to its source, but is not an independent security audit or a recorded network-traffic audit.
 
-One thing this doesn't fix: the extension reads Claude and ChatGPT through their private web routes, as every tool like it has to. If either site changes, syncing can break until the extension is updated.
+The extension still reads Claude and ChatGPT through their private web routes. If either site changes, syncing can break until the extension is updated. Importing an official data export is another way to populate the index.
 
 ## What it does
 
-- **Instant full-text search** across claude.ai and chatgpt.com: titles, your messages, the replies, artifacts, canvas documents and pasted attachments. Results update on every keystroke, with the matching passage highlighted.
+- **Full-text search** across indexed Claude and ChatGPT content: titles, your messages, replies and supported artifact, canvas and pasted-attachment text. Results update as you type, with the matching passage highlighted. Content must be captured or imported before it can be searched.
 - **Substring matching**, so `plane` finds "airplanes" and `kube` finds "Kubernetes".
 - **Typo tolerance.** Fuzzy title matching (`flt wk` finds "Fleet Week") and "did you mean" corrections (`risoto` searches for "risotto").
 - **Search by meaning.** Press Shift+Enter or the Meaning button to find chats about an idea when you don't remember the words. Runs a small embedding model on your own machine by default.
 - **Jump to the match.** Opening a result scrolls the chat to the passage you searched for and highlights every match, with a small navigator to step through them.
-- **Always up to date.** It reads your history with your existing login, then keeps itself current in the background. Chats you open or reply to are picked up instantly from the page itself, with no extra requests.
-- **Preview pane** with the full chat rendered as Markdown, copy as Markdown, download as `.md`.
+- **Background sync.** It uses your existing login to fetch history and check for updates. It also captures supported content loaded on chat pages you visit. Rate limits, site changes and incomplete downloads can leave gaps.
+- **Preview pane** for indexed messages rendered as Markdown, copy as Markdown, download as `.md`. Long messages and conversations are shortened in the preview.
 - **Filters and operators**: source, your messages only, time range, sort by relevance or date.
-- **Export everything** as a zip of Markdown files, and **import** official Claude and ChatGPT data exports.
+- **Export indexed chats** as a zip of Markdown files, and **import** official Claude and ChatGPT data exports.
 - **Search history**, a persistent popup that remembers your last search, an optional side panel, a full-page view, an address-bar keyword (`cs`), and a right-click "Search my chats for ..." on selected text.
 
 ## Install
 
-ChatSearch isn't on the Chrome Web Store yet, so it installs as an unpacked extension (takes a minute):
+ChatSearch isn't on the Chrome Web Store yet, so it installs as an unpacked extension:
 
 1. Download [`chatsearch.zip`](https://github.com/shaunmarsden/chatsearch/releases/latest/download/chatsearch.zip) and unzip it.
 2. Open `chrome://extensions` and turn on **Developer mode** (top right).
@@ -42,7 +41,7 @@ ChatSearch isn't on the Chrome Web Store yet, so it installs as an unpacked exte
 4. Pin it: click the puzzle-piece icon in the toolbar, then the pin next to ChatSearch.
 5. Make sure you're signed in to claude.ai and/or chatgpt.com in this browser. Indexing starts on its own.
 
-Open it with the toolbar icon or **Cmd+Shift+K** (Ctrl+Shift+K on Windows and Linux). Chrome 120 or newer. Other Chromium browsers (Edge, Brave, Arc) should work the same way.
+Open it with the toolbar icon or **Cmd+Shift+K** (Ctrl+Shift+K on Windows and Linux). The extension requires Chrome 120 or newer. Compatibility with other Chromium browsers is not verified by the repository's tests.
 
 To update, download the new zip, replace the folder's contents, and click the reload icon on the extension's card in `chrome://extensions`. Your index is kept.
 
@@ -52,7 +51,7 @@ Type to search. The list updates as you type; the preview on the right shows the
 
 | Key | Action |
 | --- | --- |
-| ↑ ↓ | Select a result |
+| Up / Down | Select a result |
 | Enter | Open the chat at the match |
 | Cmd/Ctrl+Enter | Open in a new tab |
 | Shift+Enter | Search by meaning |
@@ -75,27 +74,32 @@ In the address bar, type `cs`, a space, and your search to get results right in 
 
 ## How it stays current
 
-- **Claude**: the full history is listed and downloaded on first run (a few thousand chats take a few minutes), then a light incremental check runs every minute or two.
-- **ChatGPT** only allows a slow pace of full-conversation reads, shared with your own use of the site. ChatSearch therefore lists every chat right away (titles are searchable immediately), downloads full text at a gentle pace, pauses while you are using ChatGPT, and backs off for half an hour or more if ChatGPT ever says to slow down. To get everything at once, import your ChatGPT data export (Settings, Your data, Import): ChatGPT emails you a zip, and ChatSearch reads it locally.
-- If a site shows your browser a "checking your browser" page instead of data (common in brand-new browser profiles), ChatSearch says so and resumes the moment you open that site in a tab.
-- **Live capture**: when you open or reply to a chat on either site, ChatSearch indexes what the page already loaded, so the chats you actually use are always fresh without extra requests.
-- Deleted and renamed chats are noticed and updated.
+- **Claude**: the extension lists and downloads history on first run, then checks for updates roughly every minute or two. Completion time depends on the history and successful requests.
+- **ChatGPT**: ChatSearch fetches titles before downloading full conversations. Titles become searchable as they are indexed. It spaces out full-text downloads, pauses them while you use ChatGPT, and backs off after rate-limit responses. To avoid waiting for those downloads, import an official data export through Settings, Your data, Import. The extension reads the supplied export locally; it can only index what that export contains.
+- If a site returns a "checking your browser" page instead of data, ChatSearch reports it. Opening that site in a tab can help it resume.
+- **Live capture**: ChatSearch can index supported content already loaded when you open or reply to a chat, without making another request for that content. This does not guarantee a complete or current copy of every chat.
+- Sync checks can pick up deleted and renamed chats. Updates depend on the next successful check.
 
 ## Search by meaning
 
-Turned on by default, and you can switch it off in Settings. It uses [MongoDB/mdbr-leaf-ir](https://huggingface.co/MongoDB/mdbr-leaf-ir), a 23M-parameter retrieval model, through transformers.js. It runs on the GPU via WebGPU when available, otherwise on the CPU. The model is downloaded once from Hugging Face (23 to 46 MB). Embedding happens in the background, newest chats first, at about half speed on power and a lighter trickle on battery, and every passage is embedded exactly once (vectors are keyed by a hash of the text).
+Turned on by default, and you can switch it off in Settings. It uses [MongoDB/mdbr-leaf-ir](https://huggingface.co/MongoDB/mdbr-leaf-ir) through transformers.js to turn text into numerical representations for comparison. It runs on the GPU via WebGPU when available, otherwise on the CPU. Model files are downloaded from Hugging Face and cached; download size depends on the selected format. Processing happens in the background, newest chats first, with less work scheduled on battery. Cached results are reused when the text hash matches.
 
-Typed queries are capped at 1,000 characters, and a semantic search only runs when you ask for it (or automatically once when an exact search finds nothing), never on every keystroke.
+Search by meaning uses the first 1,000 characters of a query. This limit does not apply to keyword search. A meaning search runs when you ask for it, or automatically once when an exact search finds nothing, rather than on every keystroke.
 
 ## Privacy
 
 - Your chats, the search index and the vectors live in this browser's IndexedDB. Uninstalling the extension deletes them; Settings also has a delete button.
-- Network requests go only to claude.ai and chatgpt.com (with your existing login, exactly like the sites themselves), and to Hugging Face once to download the on-device model. Nothing else, and no setting changes that.
-- No analytics, no tracking, no accounts.
+- Sync requests go to claude.ai and chatgpt.com using your existing login. Local search by meaning downloads model files from Hugging Face and its download infrastructure. There is no cloud-embedding option in this fork.
+- **External images are not blocked in previews.** Markdown image URLs can load from other sites. Viewing a preview may therefore contact those sites; do not treat this as a network-isolated viewer.
+- Exporting or copying chat text creates a copy outside the index. Handle those copies as carefully as the original chats.
+- The source contains no analytics integration. You do not need a separate ChatSearch account, but syncing needs your existing Claude or ChatGPT login.
+- Local storage does not replace your employer's approval for using a browser extension with work data. This repository does not contain an independent security audit.
 
 ## Performance
 
-Measured on a synthetic history of 10,000 chats and 127 million characters (larger than almost anyone's): searches take 2 to 105 ms with the whole index in memory, about 145 MB in an offscreen document that is unloaded after a few idle minutes. Each chat gets a trigram Bloom filter (about 3 KB on average) so most chats are ruled out without reading them, and matches are verified exactly. Typing never blocks: long searches yield to the UI and are abandoned as soon as you type the next character.
+The [scale test](test/unit/scale.test.ts) generates 10,000 synthetic chats with about 127 million characters. Running `npm test` prints indexing time, memory use and query timings for that generated history. These are synthetic measurements, not evidence from a real account or a guarantee for your device. The repository does not include a saved benchmark report for the earlier headline speed and memory figures.
+
+The search engine uses compact filters to skip chats that cannot contain a match, then checks matching text. Long searches yield between batches and can be cancelled when the query changes. Actual speed depends on the query, history and device.
 
 ## Development
 
@@ -108,9 +112,11 @@ npm run e2e          # headless Chromium against mock claude.ai / chatgpt.com
 npm run zip          # release/chatsearch-<version>.zip
 ```
 
+The end-to-end test needs Playwright's Chromium installed (`npx playwright install chromium`). It uses mock sites, not your real chat accounts. Passing it does not prove that current live Claude and ChatGPT accounts sync correctly.
+
 GitHub Actions runs the typecheck, unit tests and build on every pull request. Pushing a tag such as `v1.0.2` also publishes a release with the zip built from this repo.
 
-Layout: `src/sw` (service worker: sync, capture, routing), `src/offscreen` (search engine, semantic index, embedding worker), `src/content` (page fetch observer and jump-to-match), `src/ui` (Preact UI shared by the popup, side panel and full page), `src/shared` (storage, normalization, Bloom filters, extraction, indexing).
+Layout: `src/sw` (service worker: sync, capture, routing), `src/offscreen` (search engine, semantic index, embedding worker), `src/content` (page fetch observer and jump-to-match), `src/ui` (Preact UI shared by the popup, side panel and full page), `src/shared` (storage, normalisation, Bloom filters, extraction, indexing).
 
 ## Notes
 

@@ -184,7 +184,7 @@ export function SettingsView({ settings, setSettings, status, semantic, onBack, 
         </section>
 
         <section>
-          <h3>Behavior</h3>
+          <h3>Behaviour</h3>
           <div class="row">
             <div class="row-label">Open results in</div>
             <Seg
